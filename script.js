@@ -1,92 +1,111 @@
-//returns random string 'rock' 'paper' or 'scissors'
+'use strict'
+
+//return random string 'rock' 'paper' or 'scissors'
 function getComputerChoice() {
   let randomNumber = Math.floor(Math.random() * 3) + 1
 
   switch (randomNumber) {
     case 1:
       return 'rock'
-      break
     case 2:
       return 'paper'
-      break
     case 3:
       return 'scissors'
   }
 }
 
-//returns string 'rock' 'paper' or 'scissors' based on user input
-function getPlayerChoice() {
-  let valid
-  let playerInput
+//play a round with the given choices and return a result string and the updated scores
+function playRound(pSelection, cSelection, pScore = 0, cScore = 0) {
+  let result
 
-  while (!valid) {
-    playerInput = prompt('Rock, paper, or scissors?').toLowerCase()
-
-    if (
-      playerInput === 'rock' ||
-      playerInput === 'paper' ||
-      playerInput === 'scissors'
-    ) {
-      valid = true
-    }
-  }
-
-  return playerInput
-}
-
-//plays a round and returns a string that announces the result
-function playRound(playerSelection, computerSelection) {
-  let resultAnnouncement
-
-  if (playerSelection === computerSelection) {
-    resultAnnouncement = `Tie! ${playerSelection[0].toUpperCase()}${playerSelection.slice(
-      1,
-    )} ties with ${computerSelection}.`
+  if (pSelection === cSelection) {
+    result = 'Tied round'
+    return [result, pScore, cScore]
   } else if (
-    (playerSelection === 'rock' && computerSelection === 'scissors') ||
-    (playerSelection === 'paper' && computerSelection === 'rock') ||
-    (playerSelection === 'scissors' && computerSelection === 'paper')
+    (pSelection === 'rock' && cSelection === 'scissors') ||
+    (pSelection === 'paper' && cSelection === 'rock') ||
+    (pSelection === 'scissors' && cSelection === 'paper')
   ) {
-    resultAnnouncement = `You win the round! ${playerSelection[0].toUpperCase()}${playerSelection.slice(
-      1,
-    )} beats ${computerSelection}.`
+    result = 'Player won the round'
+    pScore++
   } else {
-    resultAnnouncement = `You lose the round. ${computerSelection[0].toUpperCase()}${computerSelection.slice(
-      1,
-    )} beats ${playerSelection}.`
+    result = 'Computer won the round'
+    cScore++
   }
-
-  return resultAnnouncement
+  return [result, pScore, cScore]
 }
 
-//plays five rounds, logging the each result in the console, and announcing the result of the game
-function game() {
-    let roundCount = 0;
-    let playerWins = 0;
-    let computerWins = 0;
-
-    while (roundCount <5) {
-        let round = playRound(getPlayerChoice(), getComputerChoice())
-        let resultIndictor = round.slice(4, 5)
-
-        if (resultIndictor === 'w') {
-            playerWins++;
-        } else if (resultIndictor === 'l') {
-            computerWins++;
-        } 
-
-        console.log(round)
-
-        roundCount++;
-    }
-
-    if (playerWins > computerWins) {
-        console.log(`Player wins the game!`)
-    } else if (computerWins > playerWins) {
-        console.log(`Computer wins the game.`)
-    } else {
-        console.log(`Game over with a tie.`)
-    }
+//if a win state has been reached, return true and the winner string, else return false
+function checkForWin(pScore, cScore) {
+  if (pScore > 4) {
+    return [true, 'PLAYER']
+  } else if (cScore > 4) {
+    return [true, 'COMPUTER']
+  } else {
+    return [false]
+  }
 }
 
-game()
+function setUpIntroDisplay() {
+  const gameContainer = document.querySelector('#container')
+  const startButton = document.querySelector('#start-button')
+  const introContainer = document.querySelector('#intro')
+
+  gameContainer.style.display = 'none'
+
+  startButton.addEventListener('click', () => {
+    introContainer.style.display = 'none'
+    gameContainer.style.display = 'flex'
+  })
+}
+
+function updateDisplay(result, pScore, cScore) {
+  document.querySelector('#instructions').textContent = `${result}`
+  document.querySelector('#player-score').textContent = `${pScore}`
+  document.querySelector('#computer-score').textContent = `${cScore}`
+}
+
+;(function game() {
+  const gameButtons = Array.from(
+    document.querySelectorAll('#game-buttons>button'),
+  )
+  let playerScore
+  let computerScore
+  let roundResult
+  let gameOver
+  let winner
+
+  setUpIntroDisplay()
+
+  document.querySelector('#play-again').addEventListener('click', () => {
+    document.querySelector('#announcement').style.display = 'block'
+    document.querySelector('#game-buttons').style.display = 'flex'
+    document.querySelector('#play-again').style.display = 'none'
+  })
+
+  gameButtons.forEach((button) =>
+    button.addEventListener('click', function (event) {
+      //play a round and get the new statuses
+      ;[roundResult, playerScore, computerScore] = playRound(
+        event.target.textContent.toLowerCase(),
+        getComputerChoice(),
+        playerScore,
+        computerScore,
+      )
+      ;[gameOver, winner] = checkForWin(playerScore, computerScore)
+
+      //if one of the players reached 5 points, game is over
+      if (gameOver) {
+        updateDisplay(`${winner} WINS THE GAME!`, playerScore, computerScore)
+        document.querySelector('#announcement').style.display = 'none'
+        document.querySelector('#game-buttons').style.display = 'none'
+        document.querySelector('#play-again').style.display = 'block'
+        playerScore = 0
+        computerScore = 0
+        gameOver = false
+      } else {
+        updateDisplay(roundResult, playerScore, computerScore)
+      }
+    }),
+  )
+})()
